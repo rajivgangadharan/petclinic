@@ -1,0 +1,42 @@
+# This workflow will checkout the master branch, scan the branch for vulnerabilities
+
+# Rajiv Gangadharan, 5/8/2023
+
+name: Vulnerability Scan
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '17' ]
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run vulnerability scanner in repo mode  
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true # Cannot fix, even on full update, IGNORED
+          format: 'sarif'
+          output: trivy-results.sarif
+          severity: CRITICAL
+
+      - name: Upload scan results to GitHub security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with: 
+          sarif_file: 'trivy-results.sarif'
+          category: trivy-repo-scan
